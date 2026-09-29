@@ -18,6 +18,19 @@ The primary goal of this project is to build a binary classification pipeline to
 
 > **Note**: This is an educational and portfolio machine learning project designed to demonstrate data cleaning, exploratory data analysis (EDA), model training, threshold tuning, and advanced evaluation metrics under severe class imbalance.
 
+### 🔄 End-to-End Machine Learning Pipeline Workflow
+
+```mermaid
+flowchart TD
+    A["Raw Dataset<br/>(5,110 Patients)"] --> B["Data Preprocessing<br/>(Impute Median BMI & One-Hot Encoding)"]
+    B --> C["Stratified Train/Test Split<br/>(80% Train / 20% Test)"]
+    C --> D["Random Forest Classifier<br/>(Initial Baseline Model)"]
+    D --> E{"Evaluating Accuracy<br/>(95% Accuracy Failure)"}
+    E --> F["Extract Probability Predictions<br/>(predict_proba)"]
+    F --> G["Decision Threshold Tuning<br/>(Experimenting 0.05 to 0.50 Cutoffs)"]
+    G --> H["Precision-Recall Tradeoff Analysis<br/>(AP = 0.178 vs 0.049 Baseline)"]
+```
+
 ---
 
 ## 📂 2. Dataset Architecture
@@ -92,6 +105,10 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 Running a baseline **Random Forest Classifier** produced an initial accuracy of **95%**. However, examining the detailed classification report revealed a critical flaw:
 
+<p align="center">
+  <img src="images/class_imbalance.png" alt="Class Imbalance Distribution" width="600"/>
+</p>
+
 ```text
               precision    recall    f1-score   support
 
@@ -116,25 +133,27 @@ To properly evaluate minority class predictions, we rely on metrics specifically
 - **Recall**: $\frac{\text{TP}}{\text{TP} + \text{FN}}$ — "Of all actual positive cases, how many did the model capture?"
 - **F1 Score**: $2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}$ — Harmonic mean balancing precision and recall.
 
-### Initial Confusion Matrix Analysis
-When applying balanced class weights (`class_weight='balanced'`), the confusion matrix revealed:
+### Confusion Matrix Analysis
+When applying balanced class weights (`class_weight='balanced'`), the confusion matrix revealed severe failure in minority class recall:
 
-```text
-                 Predicted No (0)   Predicted Stroke (1)
-Actual No (0)          972                    0
-Actual Stroke (1)       49                    1
-```
+<p align="center">
+  <img src="images/confusion_matrix.png" alt="Confusion Matrix" width="550"/>
+</p>
 
-- **True Negatives (TN)**: 972
-- **False Positives (FP)**: 0
-- **False Negatives (FN)**: 49  *(49 stroke patients misclassified as healthy!)*
-- **True Positives (TP)**: 1
+- **True Negatives (TN)**: 972 *(Correctly identified healthy patients)*
+- **False Positives (FP)**: 0 *(No false alarms)*
+- **False Negatives (FN)**: 49 *(49 stroke patients misclassified as healthy!)*
+- **True Positives (TP)**: 1 *(Only 1 stroke case detected!)*
 
 ---
 
 ## 🎯 7. Prediction Probabilities & Threshold Tuning
 
 Instead of accepting the default classification threshold ($0.50$), model probabilities were extracted (`probabilities = model.predict_proba(X_test)[:, 1]`) and evaluated across multiple threshold cutoffs:
+
+<p align="center">
+  <img src="images/threshold_tradeoff.png" alt="Precision Recall Threshold Tradeoff" width="750"/>
+</p>
 
 ### Decision Threshold Experiment Results
 
@@ -158,6 +177,10 @@ Instead of accepting the default classification threshold ($0.50$), model probab
 ## 📈 8. Precision-Recall Curve & Average Precision
 
 Because ROC-AUC curves can be overly optimistic under severe class imbalance, we evaluated the **Precision-Recall Curve** and computed **Average Precision (AP)**:
+
+<p align="center">
+  <img src="images/pr_curve.png" alt="Precision-Recall Curve" width="650"/>
+</p>
 
 ```python
 from sklearn.metrics import average_precision_score, precision_recall_curve
@@ -207,6 +230,12 @@ stroke-prediction/
 ├── data/
 │   ├── healthcare-dataset-stroke-data.csv   # Original Raw Dataset
 │   └── stroke_cleaned.csv                   # Preprocessed Dataset
+│
+├── images/                                  # Visualization Plots
+│   ├── class_imbalance.png
+│   ├── confusion_matrix.png
+│   ├── pr_curve.png
+│   └── threshold_tradeoff.png
 │
 ├── notebooks/
 │   └── stroke_prediction.ipynb              # Exploratory Analysis & Model Training
